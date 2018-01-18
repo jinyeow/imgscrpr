@@ -4,5 +4,5 @@ extern crate imgscrpr;
 
 #[test]
 fn it_works() {
-    assert!(true);
+    assert!(false);
 }

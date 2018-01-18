@@ -1,31 +1,14 @@
 extern crate reqwest;
 
-pub mod imgscrpr {
-    // TODO
-}
+pub mod provider;
 
-pub mod imgur {
-    use reqwest;
-    use reqwest::{Response,Error};
+pub mod imgscrpr {
     use std::{env,fs,str};
     use std::fs::File;
     // use std::ffi::OsStr;
     use std::path::Path;
     use std::path::PathBuf;
     use std::io::prelude::*;
-
-    const API_VERSION: i32 = 3;
-    const CLIENT_ID: &str = "b5f97137be15df2";
-
-    pub fn get_data(id: &str, collection: bool) -> Result<Response, Error> {
-        let t = if collection {
-            "album"
-        } else {
-            "image"
-        };
-        let api_url = format!("https//api.imgur.com/{}/{}/{}", CLIENT_ID, t, id);
-        reqwest::get(&api_url)
-    }
 
     pub fn mk_cd_dir(location: &str) {
         fs::create_dir(&location);
@@ -57,11 +40,6 @@ pub mod imgur {
 
         mk_cd_dir(&location);
     }
-
-    // pub fn scrape(img: &Image, filename: &str) {
-    //     let mut file = File::create(&filename).unwrap();
-    //     file.write(content);
-    // }
 
     pub fn uniq_valid_filename(f: &str) -> String {
         let filename = f.replace(r"/", "_");
@@ -98,7 +76,7 @@ mod tests {
     fn it_returns_a_unique_filename() {
         let filename = "test.txt";
         File::create(&filename);
-        let uniq_filename = imgur::uniq_valid_filename(&filename);
+        let uniq_filename = imgscrpr::uniq_valid_filename(&filename);
         fs::remove_file(&filename);
 
         assert_ne!(filename, uniq_filename);
@@ -107,7 +85,7 @@ mod tests {
     #[test]
     fn it_returns_a_valid_filename() {
         let filename = "te/st.txt";
-        let valid_filename = imgur::uniq_valid_filename(&filename);
+        let valid_filename = imgscrpr::uniq_valid_filename(&filename);
 
         assert_ne!(valid_filename, filename);
         assert_eq!(valid_filename, "te_st.txt");

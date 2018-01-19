@@ -47,17 +47,18 @@ pub mod imgscrpr {
         let mut duplicate_num = 0;
         let mut path = PathBuf::from(&filename);
         let mut namae = String::from(path.file_stem().unwrap().to_str().unwrap());
+        let mut n = String::from(filename);
 
         let p = path.clone();
         let ext = p.extension().unwrap().to_str().unwrap();
 
         while path.exists() {
             duplicate_num = duplicate_num + 1;
-            namae = format!("{}_{}", namae, duplicate_num);
-            path = PathBuf::from(&namae);
+            n = format!("{}_{}.{}", namae, duplicate_num, ext);
+            path = PathBuf::from(&n);
         }
 
-        String::from(format!("{}.{}", namae, ext))
+        String::from(n)
     }
 }
 
@@ -66,11 +67,7 @@ mod tests {
     use super::*;
     use std::fs;
     use std::fs::File;
-
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+    use std::path::Path;
 
     #[test]
     fn it_returns_a_unique_filename() {
@@ -80,6 +77,7 @@ mod tests {
         fs::remove_file(&filename);
 
         assert_ne!(filename, uniq_filename);
+        assert_eq!("test_1.txt", uniq_filename);
     }
 
     #[test]
@@ -89,5 +87,32 @@ mod tests {
 
         assert_ne!(valid_filename, filename);
         assert_eq!(valid_filename, "te_st.txt");
+    }
+
+    #[test]
+    fn it_returns_a_unique_valid_filename() {
+        let filename = "te/st/file.txt";
+
+        let valid_filename = imgscrpr::uniq_valid_filename(&filename);
+        File::create(&valid_filename);
+
+        assert_ne!(valid_filename, filename);
+        assert_eq!(valid_filename, "te_st_file.txt");
+        assert!(Path::new(&valid_filename).exists());
+
+        let unique_filename = imgscrpr::uniq_valid_filename(&filename);
+        File::create(&unique_filename);
+
+        assert_ne!(unique_filename, valid_filename);
+        assert_eq!(unique_filename, "te_st_file_1.txt");
+
+        let unique_filename_2 = imgscrpr::uniq_valid_filename(&filename);
+
+        assert_ne!(unique_filename_2, unique_filename);
+
+        fs::remove_file(&valid_filename);
+        fs::remove_file(&unique_filename);
+
+        assert_eq!(unique_filename_2, "te_st_file_2.txt");
     }
 }

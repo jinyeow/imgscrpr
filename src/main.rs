@@ -1,6 +1,12 @@
+extern crate imgscrpr;
+
 extern crate clap;
 
-use clap::{Arg, App, SubCommand};
+use imgscrpr::Options;
+
+use clap::{Arg, App};
+
+use std::process;
 
 fn main() {
     let matches = App::new("imgscrpr")
@@ -49,4 +55,14 @@ fn main() {
                                .long("kpics")
                                .help("Use the 'kpics' directory instead of the default"))
                           .get_matches();
+
+    let opts = Options::new(&matches).unwrap_or_else(|err| {
+        eprintln!("Problem parsing arguments: {}", err);
+        process::exit(1);
+    });
+
+    if let Err(e) = imgscrpr::run(opts) {
+        eprintln!("Application error: {}", e);
+        process::exit(1);
+    }
 }

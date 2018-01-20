@@ -20,7 +20,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn it_works() {
+    fn it_gets_data() {
         assert!(false);
     }
 }

@@ -22,6 +22,7 @@ fn main() {
                           .arg(Arg::with_name("URL")
                                .help("Specifies image url.")
                                .required(true)
+                               .multiple(true)
                                .index(1))
                           .arg(Arg::with_name("title")
                                .short("t")
@@ -49,7 +50,8 @@ fn main() {
                           .arg(Arg::with_name("nsfw")
                                .short("n")
                                .long("nsfw")
-                               .help("Use the 'nsfw' directory instead of the default"))
+                               .help("Use the 'nsfw' directory instead of the default")
+                               .conflicts_with("kpics"))
                           .arg(Arg::with_name("kpics")
                                .short("k")
                                .long("kpics")
@@ -60,6 +62,10 @@ fn main() {
         eprintln!("Problem parsing arguments: {}", err);
         process::exit(1);
     });
+
+    if opts.debug {
+        println!("{:?}", opts);
+    }
 
     if let Err(e) = imgscrpr::run(opts) {
         eprintln!("Application error: {}", e);

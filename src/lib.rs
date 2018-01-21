@@ -14,9 +14,6 @@ use url::Url;
 use std::{env, fs, str};
 use std::error::Error;
 use std::fs::File;
-use std::io::prelude::*;
-// use std::ffi::OsStr;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process;
 
@@ -227,7 +224,7 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
                     println!("done!");
                     count += 1;
                 },
-                Err(e) =>  {
+                Err(_) =>  {
                     println!("failed");
                     fs::remove_file(filename)?;
                     failed += 1;
@@ -361,9 +358,13 @@ mod tests {
     #[test]
     fn it_returns_a_unique_filename() {
         let filename = "test.txt";
-        File::create(&filename);
+        File::create(&filename).expect(
+            "Couldn't create file in test: 'it_returns_a_unique_filename'"
+            );
         let uniq_filename = uniq_valid_filename(&filename);
-        fs::remove_file(&filename);
+        fs::remove_file(&filename).expect(
+            "Couldn't remove file in test: 'it_returns_a_unique_filename'"
+            );
 
         assert_ne!(filename, uniq_filename);
         assert_eq!("test_1.txt", uniq_filename);
@@ -383,14 +384,18 @@ mod tests {
         let filename = "te/st/file.txt";
 
         let valid_filename = uniq_valid_filename(&filename);
-        File::create(&valid_filename);
+        File::create(&valid_filename).expect(
+            "Couldn't create file in test: 'it_returns_a_unique_valid_filename'"
+            );
 
         assert_ne!(valid_filename, filename);
         assert_eq!(valid_filename, "te_st_file.txt");
         assert!(Path::new(&valid_filename).exists());
 
         let unique_filename = uniq_valid_filename(&filename);
-        File::create(&unique_filename);
+        File::create(&unique_filename).expect(
+            "Couldn't create file in test: 'it_returns_a_unique_valid_filename'"
+            );
 
         assert_ne!(unique_filename, valid_filename);
         assert_eq!(unique_filename, "te_st_file_1.txt");
@@ -399,8 +404,12 @@ mod tests {
 
         assert_ne!(unique_filename_2, unique_filename);
 
-        fs::remove_file(&valid_filename);
-        fs::remove_file(&unique_filename);
+        fs::remove_file(&valid_filename).expect(
+            "Couldn't remove file in test: 'it_returns_a_unique_valid_filename'"
+            );
+        fs::remove_file(&unique_filename).expect(
+            "Couldn't remove file in test: 'it_returns_a_unique_valid_filename'"
+            );
 
         assert_eq!(unique_filename_2, "te_st_file_2.txt");
     }
@@ -499,8 +508,33 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn it_creates_an_image_from_a_valid_link() {
-        // TODO
+        let valid_link = "https://i.imgur.com/0rut99n.jpg";
+        let filename = "0rut99n.jpg";
+
+        let img = json!({"link": valid_link});
+
+        let result = scrape(&img, &filename);
+
+        assert!(Path::new(filename).exists());
+
+        // remove the created image from scrape()
+        fs::remove_file(filename).expect(
+            "Couldn't remove file in test: 'it_creates_an_image_from_a_valid_link'"
+            );
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), ());
+    }
+
+    #[test]
+    fn it_returns_err_and_does_not_create_an_image_on_invalid_link() {
+        let invalid_link = "https://i.imgur.not/aValidL.ink";
+        let filename = "aValidL.ink";
+        let img = json!({"link": invalid_link});
+        let result = scrape(&img, &filename);
+
+        assert!(!Path::new(filename).exists());
+        assert!(result.is_err());
     }
 }

@@ -92,9 +92,6 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
             continue;
         }
 
-        let mut count = 0;
-        let mut failed = 0;
-
         let c    = is_collection(&url);
         let t    = if c { "Album" } else { "Image" };
         let host = host(&url);
@@ -135,14 +132,18 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
             } else if data["title"] != json!(null) {
                 sub_dir = Some(String::from(data["title"].as_str().unwrap()))
             } else {
-                sub_dir = Some(String::from(""))
+                sub_dir = None
             };
 
         } else {
             panic!("[!!] URL [{}] not supported", url);
         }
 
-        println!("{}...complete!", sub_dir.unwrap());
+        println!("{}...complete!", if sub_dir.is_some() {
+            sub_dir.clone().unwrap()
+        } else {
+            String::from("")
+        });
 
         // array of images
         let images = if data["images"] != json!(null) {
@@ -158,10 +159,10 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
         });
 
         // Choose output directory depending on flags
-        sub_dir = if opts.output != "" {
-            Some(opts.output.clone())
-        } else {
-            None
+        if opts.output != "" {
+            sub_dir = Some(opts.output.clone())
+        } else if sub_dir.is_none() {
+            sub_dir = None
         };
 
         let dir;
@@ -185,8 +186,12 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
 
         // SCRAPE
         println!("  [+] Scraping images now...");
-        let mut i = 0;
+        let mut i      = 0;
+        let mut count  = 0;
+        let mut failed = 0;
         for img in images.iter() {
+            i += 1;
+
             let filetype;
             let mut filename;
 
@@ -212,11 +217,7 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
 
             let filename = uniq_valid_filename(&filename);
 
-            if c {
-                print!("\t{:04}. {}", i + 1, filename);
-            } else {
-                print!("\t{:4}. {}", i + 1, filename);
-            };
+            print!("\t{:4}. {}...", i, filename);
 
             // begin scrape
             match scrape(img, &filename) {
@@ -238,7 +239,9 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
         }
 
         let count_str = format!("{} image{}", count, if count > 1 { "s" } else { "" });
-        println!("  [*] Finished scraping {}: {} successfully scraped.", url, count_str);
+        println!(
+            "  [*] Finished scraping {}: {} successfully scraped.", url, count_str
+        );
         if failed > 0 { println!("\tScrape failed: {} images.", failed); }
         // TODO
         // if url != last_url { println!("\n"); }

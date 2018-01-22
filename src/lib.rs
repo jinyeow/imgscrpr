@@ -83,7 +83,6 @@ impl Options {
 
 pub fn run(opts: Options) -> Result<(), Box<Error>> {
     let ext_re      = Regex::new(r"\.(\w+)$").unwrap();
-
     let imgur_re    = Regex::new(r"imgur").unwrap();
 
     for url in opts.urls {
@@ -95,9 +94,12 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
         let mut failed = 0;
         let host       = host(&url);
 
+        let data:        Value;
+        let mut sub_dir: Option<String>;
+        let dir:         Option<&str>;
+
         print!("[+] Scraping {}: ", url);
 
-        let data: Value;
         if imgur_re.is_match(&host) {
             data = match imgur::scrape_data(&url) {
                 Ok(j) => j,
@@ -112,7 +114,6 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
             process::exit(0);
         }
 
-        let mut sub_dir;
         if data["title"] != json!(null) {
             sub_dir = Some(String::from(data["title"].as_str().unwrap()))
         } else {
@@ -133,10 +134,10 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
         };
 
         println!("\t-- found {} image{}", images.len(), if images.len() > 1 {
-            "s"
-        } else {
-            ""
-        });
+                                                            "s"
+                                                        } else {
+                                                            ""
+                                                        });
 
         // Choose output directory depending on flags
         if opts.output != "" {
@@ -145,7 +146,6 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
             sub_dir = None
         };
 
-        let dir;
         if opts.nsfw {
             dir = Some("nsfw");
         } else if opts.kpics {
@@ -166,7 +166,7 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
 
         // SCRAPE
         println!("  [+] Scraping images now...");
-        let mut i      = 0;
+        let mut i = 0;
         for img in images.iter() {
             i += 1;
 
@@ -461,6 +461,7 @@ mod tests {
         assert!(!result);
     }
 
+    // TODO: add test for other sites/providers as well
     #[test]
     fn it_creates_an_image_from_a_valid_link() {
         let valid_link = "https://i.imgur.com/0rut99n.jpg";

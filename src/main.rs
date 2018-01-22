@@ -1,10 +1,16 @@
+extern crate imgscrpr;
+
 extern crate clap;
 
-use clap::{Arg, App, SubCommand};
+use imgscrpr::Options;
+
+use clap::{Arg, App};
+
+use std::process;
 
 fn main() {
     let matches = App::new("imgscrpr")
-                          .version("0.0.1")
+                          .version("0.1.0")
                           .author("Justin P. <jin-yeow@outlook.com>")
                           .about("Scrapes images given url(s).")
                           .arg(Arg::with_name("output")
@@ -16,6 +22,7 @@ fn main() {
                           .arg(Arg::with_name("URL")
                                .help("Specifies image url.")
                                .required(true)
+                               .multiple(true)
                                .index(1))
                           .arg(Arg::with_name("title")
                                .short("t")
@@ -43,10 +50,25 @@ fn main() {
                           .arg(Arg::with_name("nsfw")
                                .short("n")
                                .long("nsfw")
-                               .help("Use the 'nsfw' directory instead of the default"))
+                               .help("Use the 'nsfw' directory instead of the default")
+                               .conflicts_with("kpics"))
                           .arg(Arg::with_name("kpics")
                                .short("k")
                                .long("kpics")
                                .help("Use the 'kpics' directory instead of the default"))
                           .get_matches();
+
+    let opts = Options::new(&matches).unwrap_or_else(|err| {
+        eprintln!("[x] Problem parsing arguments: {}", err);
+        process::exit(1);
+    });
+
+    if opts.debug {
+        println!("{:?}", opts);
+    }
+
+    if let Err(e) = imgscrpr::run(opts) {
+        eprintln!("[x] Application error: {}\n  {}", e, e.description());
+        process::exit(1);
+    }
 }

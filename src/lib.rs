@@ -85,59 +85,39 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
     let ext_re      = Regex::new(r"\.(\w+)$").unwrap();
 
     let imgur_re    = Regex::new(r"imgur").unwrap();
-    let imgur_id_re = Regex::new(r"([a-zA-Z0-9_]{5,7})(\.\w+)?$").unwrap();
 
     for url in opts.urls {
         if !is_valid_url(&url) {
             continue;
         }
 
-        let c    = is_collection(&url);
-        let t    = if c { "Album" } else { "Image" };
-        let host = host(&url);
+        let mut count  = 0;
+        let mut failed = 0;
+        let host       = host(&url);
 
         print!("[+] Scraping {}: ", url);
 
-        let data;
-        let mut sub_dir;
+        let data: Value;
         if imgur_re.is_match(&host) {
-            // NOTE: captures returns: {<whole regex>, <capture 1>, <capture 2>, ...}
-            let id: &str = &imgur_id_re.captures(&url).unwrap()[1];
-            let body = match imgur::get_data(id, c) {
-                Ok(mut d) => d.text()?,
-                Err(e) => return Err(Box::new(e))
+            data = match imgur::scrape_data(&url) {
+                Ok(j) => j,
+                Err(e) => return Err(e)
             };
-
-            // JSON.parse data
-            let json: Value = match serde_json::from_str(&body) {
-                Ok(v) => v,
-                Err(e) => return Err(Box::new(e))
-            };
-
-            // data[:success] ? data = data[:data] : panic!("!! Scrape filaed")
-            if json["success"].as_bool().unwrap() {
-                data = json["data"].to_owned();
-            } else {
-                panic!("!! Scrape failed");
-            }
-
-            if opts.debug {
-                println!("{:?}", data);
-                process::exit(0);
-            }
-
-            // title = data[:title] || if c { format!("{}_{}", t, id) }
-            if data["title"].is_null() && c {
-                sub_dir = Some(format!("{}_{}", t, id))
-            } else if data["title"] != json!(null) {
-                sub_dir = Some(String::from(data["title"].as_str().unwrap()))
-            } else {
-                sub_dir = None
-            };
-
         } else {
             panic!("[!!] URL [{}] not supported", url);
         }
+
+        if opts.debug {
+            println!("{:?}", data);
+            process::exit(0);
+        }
+
+        let mut sub_dir;
+        if data["title"] != json!(null) {
+            sub_dir = Some(String::from(data["title"].as_str().unwrap()))
+        } else {
+            sub_dir = None
+        };
 
         println!("{}...complete!", if sub_dir.is_some() {
             sub_dir.clone().unwrap()
@@ -187,8 +167,6 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
         // SCRAPE
         println!("  [+] Scraping images now...");
         let mut i      = 0;
-        let mut count  = 0;
-        let mut failed = 0;
         for img in images.iter() {
             i += 1;
 
@@ -342,12 +320,6 @@ fn host(url: &str) -> String {
     h
 }
 
-// NOTE: maybe move this into mod imgur ?
-fn is_collection(url: &str) -> bool {
-    let re = Regex::new(r"/a/|/gallery/").unwrap();
-    re.is_match(url)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -486,27 +458,6 @@ mod tests {
     fn it_returns_false_on_empty_url() {
         let url = "";
         let result = is_valid_url(url);
-        assert!(!result);
-    }
-
-    #[test]
-    fn it_returns_true_on_album() {
-        let url = "https://imgur.com/a/cdJA3"; // imgur album
-        let result = is_collection(url);
-        assert!(result);
-    }
-
-    #[test]
-    fn it_returns_true_on_gallery() {
-        let url = "https://imgur.com/gallery/KtiYY";
-        let result = is_collection(url);
-        assert!(result);
-    }
-
-    #[test]
-    fn it_returns_false_on_single_image() {
-        let url = "https://i.imgur.com/Z94RUOi.jpg";
-        let result = is_collection(url);
         assert!(!result);
     }
 

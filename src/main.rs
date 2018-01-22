@@ -59,7 +59,7 @@ fn main() {
                           .get_matches();
 
     let opts = Options::new(&matches).unwrap_or_else(|err| {
-        eprintln!("Problem parsing arguments: {}", err);
+        eprintln!("[x] Problem parsing arguments: {}", err);
         process::exit(1);
     });
 
@@ -68,7 +68,7 @@ fn main() {
     }
 
     if let Err(e) = imgscrpr::run(opts) {
-        eprintln!("Application error: {}", e);
+        eprintln!("[x] Application error: {}\n  {}", e, e.description());
         process::exit(1);
     }
 }

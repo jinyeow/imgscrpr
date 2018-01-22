@@ -13,6 +13,7 @@ use url::Url;
 
 use std::{env, fs, str};
 use std::error::Error;
+use std::fmt;
 use std::fs::File;
 use std::path::PathBuf;
 use std::process;
@@ -20,6 +21,21 @@ use std::process;
 pub mod provider;
 
 use provider::imgur;
+
+#[derive(Debug)]
+pub struct UnsupportedUrlError;
+
+impl Error for UnsupportedUrlError {
+    fn description(&self) -> &str {
+        "[!!] URL not supported"
+    }
+}
+
+impl fmt::Display for UnsupportedUrlError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "UnsupportedUrlError")
+    }
+}
 
 #[derive(Debug)]
 pub struct Options {
@@ -82,8 +98,9 @@ impl Options {
 }
 
 pub fn run(opts: Options) -> Result<(), Box<Error>> {
-    let ext_re      = Regex::new(r"\.(\w+)$").unwrap();
-    let imgur_re    = Regex::new(r"imgur").unwrap();
+    let ext_re     = Regex::new(r"\.(\w+)$").unwrap();
+    let imgur_re   = Regex::new(r"imgur").unwrap();
+    let general_re = Regex::new(r"/([a-zA-Z0-9\-_]+)\.(\w+)$").unwrap();
 
     for url in opts.urls {
         if !is_valid_url(&url) {
@@ -105,8 +122,15 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
                 Ok(j) => j,
                 Err(e) => return Err(e)
             };
+        } else if general_re.is_match(&url) {
+            let captures = general_re.captures(&url).unwrap();
+            data         = json!({
+                "link": url,
+                "id":   captures[1],
+                "ext":  captures[2]
+            });
         } else {
-            panic!("[!!] URL [{}] not supported", url);
+            return Err(Box::new(UnsupportedUrlError))
         }
 
         if opts.debug {

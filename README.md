@@ -16,8 +16,6 @@ $ # copy the binary into your $PATH
 $ cp target/debug/imgscrpr-dl ~/.bin
 ```
 
-OR simply `cargo install imgscrpr`.
-
 ## Usage
 
 See `imgscrpr --help`.

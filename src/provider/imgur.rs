@@ -8,7 +8,7 @@ use serde_json::Value;
 use std::error::Error;
 
 const API_VERSION: i32 = 3;
-const CLIENT_ID: &str = "b5f97137be15df2";
+const CLIENT_ID: &str  = "b5f97137be15df2";
 
 fn get_data(id: &str, collection: bool) -> Result<Response, reqwest::Error> {
     let t = if collection {
@@ -70,12 +70,6 @@ pub fn scrape_data(url: &str) -> Result<Value, Box<Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    #[ignore]
-    fn it_gets_data() {
-        assert!(false);
-    }
 
     #[test]
     fn it_returns_true_on_album() {

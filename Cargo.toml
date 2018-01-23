@@ -1,11 +1,12 @@
 [package]
 name    = "imgscrpr"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["jinyeow <jin-yeow@outlook.com>"]
 
 [dependencies]
 clap       = "2.29.2"
 regex      = "*"
 reqwest    = "*"
+scraper    = "*"
 serde_json = "*"
 url        = "*"

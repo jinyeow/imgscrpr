@@ -1,16 +1,19 @@
 extern crate clap;
 extern crate regex;
 extern crate reqwest;
+extern crate scraper;
 extern crate url;
 
 #[macro_use]
 extern crate serde_json;
 
+// Crate Modules
 use clap::ArgMatches;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use serde_json::Value;
 use url::Url;
 
+// Stdlib Modules
 use std::{env, fs, str};
 use std::error::Error;
 use std::fmt;
@@ -18,9 +21,11 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::process;
 
+// Custom
 pub mod provider;
 
 use provider::imgur;
+use provider::gfycat;
 
 #[derive(Debug)]
 pub struct UnsupportedUrlError;
@@ -100,6 +105,10 @@ impl Options {
 pub fn run(opts: Options) -> Result<(), Box<Error>> {
     let ext_re     = Regex::new(r"\.(\w+)$").unwrap();
     let imgur_re   = Regex::new(r"imgur").unwrap();
+    let gfycat_re  = RegexBuilder::new(r"gfycat")
+        .case_insensitive(true)
+        .build()
+        .unwrap();
     let general_re = Regex::new(r"/([a-zA-Z0-9\-_]+)\.(\w+)$").unwrap();
 
     for url in opts.urls {
@@ -119,7 +128,12 @@ pub fn run(opts: Options) -> Result<(), Box<Error>> {
 
         if imgur_re.is_match(&host) {
             data = match imgur::scrape_data(&url) {
-                Ok(j) => j,
+                Ok(i) => i,
+                Err(e) => return Err(e)
+            };
+        } else if gfycat_re.is_match(&url) {
+            data = match gfycat::scrape_data(&url) {
+                Ok(g) => g,
                 Err(e) => return Err(e)
             };
         } else if general_re.is_match(&url) {
@@ -272,6 +286,8 @@ fn mk_cd_dir(location: &str) -> Result<(), Box<Error>> {
     Ok(())
 }
 
+// TODO: refactor mkdir_*() to take Option args.
+//  That way we only need 1 function to do the work of 3.
 fn mkdir_default() -> Result<(), Box<Error>> {
     let home = env::home_dir().unwrap();
     let location = format!("{}/Pictures/scraped/", home.display());

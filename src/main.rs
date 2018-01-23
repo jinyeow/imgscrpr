@@ -10,7 +10,7 @@ use std::process;
 
 fn main() {
     let matches = App::new("imgscrpr")
-                          .version("0.2.0")
+                          .version("0.3.0")
                           .author("Justin P. <jin-yeow@outlook.com>")
                           .about("Scrapes images given url(s).")
                           .arg(Arg::with_name("output")
